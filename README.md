@@ -34,88 +34,94 @@ In this design, we will implement a 4KB ROM. Since ROM is typically read-only, w
 The address width for 4KB memory is 12 bits (2^12 = 4096).
 
 
-// rom_memory.v
 module rom_memory (
-    input wire clk,
-    input wire write_enable,   // Signal to enable write operation
-    input wire [11:0] address, // 12-bit address for 4KB memory
-    input wire [7:0] data_in,  // Data to write into ROM
-    output reg [7:0] data_out  // Data read from ROM
+    input clk,                
+    input rst,                 
+    input rw,                  
+    input [11:0] address,      
+    input [7:0] data_in,      
+    output reg [7:0] data_out  
 );
-
-    // Declare ROM with 4096 memory locations (each 8 bits wide)
-    reg [7:0] rom[0:4095];
-
+    reg [7:0] mem[0:4095];
     always @(posedge clk) begin
-        if (write_enable) begin
-            // Write operation: Write data into the ROM at the given address
-            rom[address] <= data_in;
+        if (rst) begin
+            data_out <= 8'd0;  
         end
-        // Read operation: Read data from the ROM at the given address
-        data_out <= rom[address];
+        else if (rw) begin
+            mem[address] <= data_in; 
+        end
+        else begin
+            data_out <= mem[address]; 
+        end
     end
+
 endmodule
 
 
-Testbench for 4KB ROM Memory
+OUTPUT:![Screenshot 2025-05-12 183351](https://github.com/user-attachments/assets/175eed8f-c5d8-40cd-b00b-17cca7105445)
 
-// rom_memory_tb.v
+
+
+Testbench for 4KB ROM Memory
 `timescale 1ns / 1ps
 
-module rom_memory_tb;
-
-    // Inputs
+module tb_rom_memory;
     reg clk;
-    reg write_enable;
-    reg [11:0] address;
-    reg [7:0] data_in;
-
-    // Outputs
-    wire [7:0] data_out;
-
-    // Instantiate the ROM module
+    reg rst;
+    reg rw;                 
+    reg [11:0] address;      
+    reg [7:0] data_in;      
+    wire [7:0] data_out;     
     rom_memory uut (
         .clk(clk),
-        .write_enable(write_enable),
+        .rst(rst),
+        .rw(rw),
         .address(address),
         .data_in(data_in),
         .data_out(data_out)
     );
-
-    // Clock generation
-    always #5 clk = ~clk;  // Toggle clock every 5 ns
-
-    // Test procedure
     initial begin
-        // Initialize inputs
         clk = 0;
-        write_enable = 0;
-        address = 0;
-        data_in = 0;
-
-        // Write data into memory
-        #10 write_enable = 1; address = 12'd0; data_in = 8'hA5;  // Write 0xA5 at address 0
-        #10 write_enable = 1; address = 12'd1; data_in = 8'h5A;  // Write 0x5A at address 1
-        #10 write_enable = 1; address = 12'd2; data_in = 8'hFF;  // Write 0xFF at address 2
-        #10 write_enable = 1; address = 12'd3; data_in = 8'h00;  // Write 0x00 at address 3
-
-        // Disable write and start reading from memory
-        #10 write_enable = 0; address = 12'd0;
-        #10 address = 12'd1;
-        #10 address = 12'd2;
-        #10 address = 12'd3;
-
-        // Stop the simulation
-        #10 $stop;
+        forever #5 clk = ~clk;  
     end
-
-    // Monitor the values for verification
     initial begin
-        $monitor("Time = %0t | Write Enable = %b | Address = %h | Data In = %h | Data Out = %h", 
-                 $time, write_enable, address, data_in, data_out);
+        rst = 1;
+        rw = 0;
+        address = 12'd0;
+        data_in = 8'd0;
+        #10;
+        rst = 0;
+        #10;
+        rw = 1;               
+        address = 12'd10;   
+        data_in = 8'd55;      
+        #10;
+        address = 12'd20;    
+        data_in = 8'd100;    
+        #10;
+        address = 12'd30;   
+        data_in = 8'd200;  
+        #10;
+        rw = 0;          
+        #10;
+        address = 12'd10;
+        #10;
+        $display("Read from Address 10: %d", data_out); 
+        #10;
+        address = 12'd20;
+        #10;
+        $display("Read from Address 20: %d", data_out);
+        #10;
+        address = 12'd30;
+        #10;
+        $display("Read from Address 30: %d", data_out);  
+        #10;
+        $finish;
     end
 
 endmodule
+
+OUTPUT:![Screenshot 2025-05-12 183412](https://github.com/user-attachments/assets/ac46016d-61d6-4390-a1df-faf4b46d8a36)
 
 
 Conclusion
