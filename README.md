@@ -55,7 +55,7 @@ module rom_memory (
         data_out <= rom[address];
     end
 endmodule
-
+```
 
 Testbench for 4KB ROM Memory
 
