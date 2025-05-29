@@ -48,95 +48,313 @@ In this design, we will implement a 4KB ROM. Since ROM is typically read-only, w
 The address width for 4KB memory is 12 bits (2^12 = 4096).
 
 ```
-    module rom_memory (
-    input clk,                
-    input rst,                 
-    input rw,                  
-    input [11:0] address,      
-    input [7:0] data_in,      
-    output reg [7:0] data_out  
+   module rom_mem(input clk,rst,input[9:0] address,output reg[7:0] data_out);
+
+reg [7:0] rom_mem[1023:0];
+
+initial begin
+rom_mem[0]=8'h1A;
+rom_mem[1]=8'h2A;
+rom_mem[2]=8'h3A;
+rom_mem[3]=8'h92;
+rom_mem[4]=8'h5E;
+rom_mem[5]=8'h6F;
+rom_mem[6]=8'h70;
+
+end
+
+always@(posedge clk) 
+begin
+
+if(rst)
+
+data_out <= 8'b0;
+
+else
+
+data_out <= rom_mem[address];
+
+end
+
+endmodule
+```
+Testbench for 4KB ROM Memory
+```
+module rom_design_tb;
+reg clk, rst;
+reg [2:0] address;
+wire [3:0] dataout;
+
+rom_design uut (
+  .clk(clk),
+  .rst(rst),
+  .address(address),
+  .dataout(dataout)
 );
-    reg [7:0] mem[0:4095];
-    always @(posedge clk) begin
-        if (rst) begin
-            data_out <= 8'd0;  
-        end
-        else if (rw) begin
-            mem[address] <= data_in; 
-        end
-        else begin
-            data_out <= mem[address]; 
-        end
-    end
+
+initial begin
+  clk = 1'b0;
+  forever #5 clk = ~clk;
+end
+
+initial begin
+  rst = 1'b1;
+  address = 3'b000;
+  
+  // Reset assertion
+  #10 rst = 1'b0;
+  
+  // Test address 0
+  #10 address = 3'b000;
+  #10 $display("Address: %d, Dataout: %d", address, dataout);
+  
+  // Test address 1
+  #10 address = 3'b001;
+  #10 $display("Address: %d, Dataout: %d", address, dataout);
+  
+  // Test address 2
+  #10 address = 3'b010;
+  #10 $display("Address: %d, Dataout: %d", address, dataout);
+  
+  // Test address 4
+  #10 address = 3'b100;
+  #10 $display("Address: %d, Dataout: %d", address, dataout);
+  
+  // Test address 5
+  #10 address = 3'b101;
+  #10 $display("Address: %d, Dataout: %d", address, dataout);
+  
+  // Test address 6
+  #10 address = 3'b110;
+  #10 $display("Address: %d, Dataout: %d", address, dataout);
+  
+  // Test address 7
+  #10 address = 3'b111;
+  #10 $display("Address: %d, Dataout: %d", address, dataout);
+  
+  // Test reset
+  #10 rst = 1'b1;
+  #10 $display("Reset asserted, Dataout: %d", dataout);
+end
 
 endmodule
 ```
 
-OUTPUT:
-![Screenshot 2025-05-12 183351](https://github.com/user-attachments/assets/98358edf-0cde-4ea0-8423-a977791fa527)
+OUTPUT:![Screenshot 2025-05-29 201928](https://github.com/user-attachments/assets/8ddb7779-6214-46d2-9062-08981276cb20)
 
- Testbench for 4KB ROM Memory
 
-`timescale 1ns / 1ps
+VERILOG CODE FOR RAM:
 ```
-module tb_rom_memory;
-    reg clk;
-    reg rst;
-    reg rw;                 
-    reg [11:0] address;      
-    reg [7:0] data_in;      
-    wire [7:0] data_out;     
-    rom_memory uut (
-        .clk(clk),
-        .rst(rst),
-        .rw(rw),
-        .address(address),
-        .data_in(data_in),
-        .data_out(data_out)
-    );
-    initial begin
-        clk = 0;
-        forever #5 clk = ~clk;  
+module ram_memory(input clk,rst,
+input[7:0] data_in,input wr_en,input[9:0] address,
+output reg[7:0] data_out);
+reg[7:0] ram_memory[1023:0];
+always@(posedge clk)
+ begin 
+  if(rst)
+     data_out <= 8'b0;
+    else if(wr_en)
+    ram_memory[address] <= data_in;
+    else
+    data_out <= ram_memory[address];
     end
-    initial begin
-        rst = 1;
-        rw = 0;
-        address = 12'd0;
-        data_in = 8'd0;
-        #10;
-        rst = 0;
-        #10;
-        rw = 1;               
-        address = 12'd10;   
-        data_in = 8'd55;      
-        #10;
-        address = 12'd20;    
-        data_in = 8'd100;    
-        #10;
-        address = 12'd30;   
-        data_in = 8'd200;  
-        #10;
-        rw = 0;          
-        #10;
-        address = 12'd10;
-        #10;
-        $display("Read from Address 10: %d", data_out); 
-        #10;
-        address = 12'd20;
-        #10;
-        $display("Read from Address 20: %d", data_out);
-        #10;
-        address = 12'd30;
-        #10;
-        $display("Read from Address 30: %d", data_out);  
-        #10;
-        $finish;
-    end
+endmodule
+
+## Test bench code for RAM:
+module rom_design_tb;
+reg clk, rst;
+reg [2:0] address;
+wire [3:0] dataout;
+
+rom_design uut (
+  .clk(clk),
+  .rst(rst),
+  .address(address),
+  .dataout(dataout)
+);
+
+initial begin
+  clk = 1'b0;
+  forever #5 clk = ~clk;
+end
+
+initial begin
+  rst = 1'b1;
+  address = 3'b000;
+  
+  // Reset assertion
+  #10 rst = 1'b0;
+  
+  // Test address 0
+  #10 address = 3'b000;
+  #10 $display("Address: %d, Dataout: %d", address, dataout);
+  
+  // Test address 1
+  #10 address = 3'b001;
+  #10 $display("Address: %d, Dataout: %d", address, dataout);
+  
+  // Test address 2
+  #10 address = 3'b010;
+  #10 $display("Address: %d, Dataout: %d", address, dataout);
+  
+  // Test address 4
+  #10 address = 3'b100;
+  #10 $display("Address: %d, Dataout: %d", address, dataout);
+  
+  // Test address 5
+  #10 address = 3'b101;
+  #10 $display("Address: %d, Dataout: %d", address, dataout);
+  
+  // Test address 6
+  #10 address = 3'b110;
+  #10 $display("Address: %d, Dataout: %d", address, dataout);
+  
+  // Test address 7
+  #10 address = 3'b111;
+  #10 $display("Address: %d, Dataout: %d", address, dataout);
+  
+  // Test reset
+  #10 rst = 1'b1;
+  #10 $display("Reset asserted, Dataout: %d", dataout);
+end
 
 endmodule
 ```
-OUTPUT:
-![Screenshot 2025-05-12 183412](https://github.com/user-attachments/assets/61e1f711-2a5c-45bc-9014-5862e3aeaf3a)
+OUTPUT:![Screenshot 2025-05-29 201835](https://github.com/user-attachments/assets/9d41d8f6-3627-4485-aca1-3f213299a23a)
+
+
+VERILOG CODE FOR FIFO:
+```
+module fifo_8 #(parameter depth = 8, data_width = 8)
+  (input  clk, rst, 
+   input    w_en, r_en,
+   input   [data_width-1:0] data_in,
+   output  reg [data_width-1:0] data_out,
+   output  full, empty);
+
+reg [$clog2(depth)-1:0] w_ptr, r_ptr;
+reg [data_width-1:0] fifo [depth-1:0];  // Adjusted array bounds
+
+always @(posedge clk) begin
+  if (!rst) begin
+    w_ptr <= 0;
+    r_ptr <= 0;
+    data_out <= 0;
+  end
+end
+
+always @(posedge clk) begin
+  if (w_en && !full) begin
+    fifo[w_ptr] <= data_in;
+    w_ptr <= w_ptr + 1;  // Pointer wrap-around
+  end
+end
+
+always @(posedge clk) begin
+  if (r_en && !empty) begin
+    data_out <= fifo[r_ptr];  // Corrected read data assignment
+    r_ptr <= r_ptr + 1;  // Pointer wrap-around
+  end
+end
+
+assign full = (w_ptr + 1 == r_ptr);
+assign empty = (w_ptr == r_ptr);
+
+
+
+
+endmodule
+```
+
+Test bench code for FIFO:
+```
+module fifo_8_tb;
+reg clk, rst;
+reg w_en, r_en;
+reg [7:0] data_in;
+wire [7:0] data_out;
+wire full, empty;
+
+fifo_8 #(.depth(8), .data_width(8)) uut (
+    .clk(clk),
+    .rst(rst),
+    .w_en(w_en),
+    .r_en(r_en),
+    .data_in(data_in),
+    .data_out(data_out),
+    .full(full),
+    .empty(empty)
+);
+
+initial begin
+    clk = 1'b0;
+    forever #5 clk = ~clk;
+end
+
+initial begin
+    rst = 1'b1;
+    w_en = 1'b0;
+    r_en = 1'b0;
+    data_in = 8'd0;
+    
+    // Reset assertion
+    #10 rst = 1'b0;
+    
+    // Write data 1
+    #10 w_en = 1'b1;
+    data_in = 8'd1;
+    #10;
+    w_en = 1'b0;
+    $display("Write 1, Full: %b, Empty: %b", full, empty);
+    
+    // Write data 2
+    #10 w_en = 1'b1;
+    data_in = 8'd2;
+    #10;
+    w_en = 1'b0;
+    $display("Write 2, Full: %b, Empty: %b", full, empty);
+    
+    // Write data 3-8
+    #10 w_en = 1'b1; data_in = 8'd3; #10; w_en = 1'b0;
+    #10 w_en = 1'b1; data_in = 8'd4; #10; w_en = 1'b0;
+    #10 w_en = 1'b1; data_in = 8'd5; #10; w_en = 1'b0;
+    #10 w_en = 1'b1; data_in = 8'd6; #10; w_en = 1'b0;
+    #10 w_en = 1'b1; data_in = 8'd7; #10; w_en = 1'b0;
+    #10 w_en = 1'b1; data_in = 8'd8; #10; w_en = 1'b0;
+    $display("Write 3-8, Full: %b, Empty: %b", full, empty);
+    
+    // Read data 1
+    #10 r_en = 1'b1;
+    #10;
+    r_en = 1'b0;
+    $display("Read 1, Data: %d, Full: %b, Empty: %b", data_out, full, empty);
+    
+    // Read data 2-8
+    #10 r_en = 1'b1; #10; r_en = 1'b0;
+    #10 r_en = 1'b1; #10; r_en = 1'b0;
+    #10 r_en = 1'b1; #10; r_en = 1'b0;
+    #10 r_en = 1'b1; #10; r_en = 1'b0;
+    #10 r_en = 1'b1; #10; r_en = 1'b0;
+    #10 r_en = 1'b1; #10; r_en = 1'b0;
+    #10 r_en = 1'b1; #10; r_en = 1'b0;
+    $display("Read 2-8, Full: %b, Empty: %b", full, empty);
+    
+    // Overflow test
+    #10 w_en = 1'b1;
+    data_in = 8'd9;
+    #10;
+    $display("Overflow, Full: %b, Empty: %b", full, empty);
+    
+    // Underflow test
+    #10 r_en = 1'b1;
+    #10;
+    $display("Underflow, Full: %b, Empty: %b", full, empty);
+end
+
+endmodule
+```
+
+OUTPUT:![Screenshot 2025-05-29 201553](https://github.com/user-attachments/assets/254c6cb1-548d-45aa-8e54-2e6f51819a93)
 
 
 
